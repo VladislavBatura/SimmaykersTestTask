@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace SimmaykersTestTask
 {
+    [Serializable]
     public class GraphData
     {
         public double x { get; set; }
