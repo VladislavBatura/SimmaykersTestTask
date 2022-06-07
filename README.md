@@ -1,4 +1,8 @@
 # SimmaykersTestTask
+
+Были использованы библиотеки: InteractiveDataDisplay.WPF как альтернатива DynamicDataDisplay;
+Microsoft.Xaml.Behaviors.Wpf;
+
 Тестовое задание
 
 Необходимо написать одностраничное
