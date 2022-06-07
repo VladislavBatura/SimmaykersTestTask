@@ -1,13 +1,8 @@
-﻿using InteractiveDataDisplay.WPF;
-using SimmaykersTestTask.Commands;
-using System;
-using System.Collections.Generic;
+﻿using SimmaykersTestTask.Commands;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using SimmaykersTestTask.Extensions;
 using System.Windows;
 
