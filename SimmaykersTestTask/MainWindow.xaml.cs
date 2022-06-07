@@ -19,6 +19,8 @@ using System.Windows.Shapes;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SimmaykersTestTask.ViewModels;
+using Microsoft.Xaml.Behaviors;
 
 namespace SimmaykersTestTask
 {
@@ -32,15 +34,23 @@ namespace SimmaykersTestTask
         public MainWindow()
         {
             InitializeComponent();
+
+            DataContext = new ApplicationViewModel();
         }
 
         public Task LoadGraphs(IEnumerable<GraphData> graphDatas)
         {
-            var x = graphDatas.Select(item => item.x).ToArray();
-            var y = graphDatas.Select(item => item.y).ToArray();
+            var x = graphDatas.Select(item => item.X).ToArray();
+            var y = graphDatas.Select(item => item.Y).ToArray();
 
             linegraph.Plot(x, y);
             return Task.CompletedTask;
+        }
+
+        private void TakeVmAndLoadGraphs()
+        {
+            var dt = DataContext as ApplicationViewModel;
+            LoadGraphs(dt.GraphDatas);
         }
 
         private void tableInput_Initialized(object sender, EventArgs e)
@@ -55,100 +65,39 @@ namespace SimmaykersTestTask
             return k * x + b;
         }
 
-        private async void tableInput_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
-        {
-            if (e.EditAction == DataGridEditAction.Commit)
-            {
-                if (e.Column is DataGridBoundColumn column)
-                {
-                    var bindingPath = (column.Binding as Binding).Path.Path;
-                    if (bindingPath.Equals("x"))
-                    {
-                        var rowIndex = e.Row.GetIndex();
-                        var el = e.EditingElement as TextBox;
-                        var x = double.Parse(el.Text);
-                        var y = Function(x);
-                        var dataDot = graphData[rowIndex];
-                        dataDot.y = y;
-                        dataDot.x = x;
-
-                        await LoadGraphs(graphData);
-                    }
-                }
-            }
-        }
-
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            var selectedItem = tableInput.SelectedItem;
-            if (selectedItem is not null)
-            {
-                if (selectedItem is GraphData dat)
-                {
-                    graphData.Remove(dat);
-                    LoadGraphs(graphData);
-                    tableInput.Items.Refresh();
-                }
-            }
-        }
-
-        private void CopyTableButton_Click(object sender, RoutedEventArgs e)
-        {
-            var sb = new StringBuilder();
-            foreach(var dot in graphData)
-            {
-                sb.Append(dot.x.ToString() + "\t");
-                sb.Append(dot.y.ToString());
-
-                sb.AppendLine();
-            }
-
-            var clip = new DataObject();
-            clip.SetData(DataFormats.Text, sb.ToString());
-            Clipboard.Clear();
-            Clipboard.SetDataObject(clip);
+            TakeVmAndLoadGraphs();
         }
 
         private void PasteTableButton_Click(object sender, RoutedEventArgs e)
         {
-            var dataObject = Clipboard.GetDataObject();
-            var dataObjectText = dataObject.GetData(DataFormats.Text);
-            var textFromDataObject = dataObjectText.ToString();
-            var textAfterRegex = Regex.Replace(textFromDataObject, @"\t|\n|\r", " ");
-            var splitedText = textAfterRegex.Split(' ');
-            graphData.Clear();
-            for(var i = 0; i < splitedText.Count() - 1; i++)
-            {
-                if (splitedText[i].Equals(""))
-                    continue;
-
-                graphData.Add(new()
-                {
-                    x = double.Parse(splitedText[i]),
-                    y = double.Parse(splitedText[i + 1])
-                });
-                i++;
-            }
-
-            tableInput.Items.Refresh();
-        }
-
-        private void SaveTableButton_Click(object sender, RoutedEventArgs e)
-        {
-            var a = JsonSerializer.Serialize<IEnumerable<GraphData>>(graphData);
-            File.WriteAllText("table.json", a);
+            TakeVmAndLoadGraphs();
         }
 
         private void LoadTableButton_Click(object sender, RoutedEventArgs e)
         {
-            var a = File.ReadAllText("table.json");
-            var b = JsonSerializer.Deserialize<IEnumerable<GraphData>>(a);
-            if (b is IEnumerable<GraphData> data)
+            TakeVmAndLoadGraphs();
+        }
+
+        private void tableInput_RowEditEnding(object sender, DataGridRowEditEndingEventArgs e)
+        {
+            if (tableInput.SelectedItem is null)
             {
-                graphData.AddRange(data);
-                tableInput.Items.Refresh();
-                LoadGraphs(graphData);
+                return;
             }
+
+            var dg = sender as DataGrid;
+            dg.RowEditEnding -= tableInput_RowEditEnding;
+            dg.CommitEdit();
+            dg.Items.Refresh();
+            dg.RowEditEnding += tableInput_RowEditEnding;
+
+            var data = tableInput.SelectedItem as GraphData;
+
+            var y = Function(data.X);
+            data.Y = y;
+            TakeVmAndLoadGraphs();
         }
     }
 }
